@@ -1,8 +1,7 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
-import { SignIn } from "@/components/SignIn";
+import { Geist, Geist_Mono } from "next/font/google";
+
+import NavBar from "@/components/NavBar";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -14,7 +13,7 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
@@ -24,20 +23,9 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col h-[100vh]`}
 			>
-				<nav className="bg-neutral-700 p-3 flex">
-					<NavButton href="/" text="Main" />
-					<SignIn />
-				</nav>
+				<NavBar />
 				<div className="flex-grow">{children}</div>
 			</body>
 		</html>
-	);
-}
-
-function NavButton(props: { href: string; text: string }) {
-	return (
-		<Link className="hover:underline" href={props.href}>
-			{props.text}
-		</Link>
 	);
 }

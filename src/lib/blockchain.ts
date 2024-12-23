@@ -1,28 +1,32 @@
 import { sha1 } from "object-hash";
 import { parse, stringify } from "yaml";
 import * as fs from "node:fs/promises";
+import { Animal, setAnimals } from "./animal";
 
-export class Block {
-	public timestamp: number;
+export type Block = {
+	timestamp: number;
+	type: string;
+	data: any;
+	previousHash: string;
+};
 
-	constructor(
-		public type: string,
-		public data: any,
-		public previousHash: string = ""
-	) {
-		this.timestamp = Date.now();
-	}
+function newBlock(type: string, data: any, previousHash = "") {
+	return {
+		timestamp: Date.now(),
+		type: type,
+		data: data,
+		previousHash: previousHash,
+	} as Block;
+}
 
-	public hash() {
-		return sha1(this);
-	}
+function hash(block: Block) {
+	return sha1(block);
 }
 
 const bcFile = "blockchain.yaml";
-const genBlock = new Block("system", { info: "Initializing blockchain" });
+const genBlock = newBlock("system", { info: "Initializing blockchain" });
 
 export const blockchain = await initBlockchain();
-console.log(blockchain);
 
 async function initBlockchain() {
 	try {
@@ -35,6 +39,21 @@ async function initBlockchain() {
 		if (err) {
 			throw new Error(`Faulty block at index ${err}`);
 		}
+
+		// process blocks
+		const loadedAnimals: Animal[] = [];
+
+		bc.forEach((b) => {
+			switch (b.type) {
+				case "animal": {
+					const animal = b.data.animal as Animal;
+					loadedAnimals.push(animal);
+					break;
+				}
+			}
+		});
+
+		setAnimals(loadedAnimals);
 
 		return bc;
 	} catch (error) {
@@ -51,8 +70,8 @@ async function initBlockchain() {
 	}
 }
 
-export function createBlock(data: any) {
-	const block = new Block(data, blockchain[blockchain.length - 1].hash());
+export function createBlock(type: string, data: any) {
+	const block = newBlock(type, data, hash(blockchain[blockchain.length - 1]));
 	blockchain.push(block);
 
 	// save to file
@@ -65,7 +84,10 @@ export function checkBlockchain(blockchain: Block[]) {
 		const prevBlock = blockchain[i - 1];
 		const block = blockchain[i];
 
-		if (prevBlock.hash() !== block.previousHash) {
+		const prevHash = hash(prevBlock);
+
+		if (prevHash !== block.previousHash) {
+			console.log("Comparison failed.", prevBlock, prevHash, block);
 			return i;
 		}
 	}
