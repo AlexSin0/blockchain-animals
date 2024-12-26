@@ -1,5 +1,6 @@
-import { createAnimal, animals } from "@/lib/animal";
+import { createAnimal, animals, getImage } from "@/lib/animal";
 import { auth, signIn } from "@/lib/auth";
+import Image from "next/image";
 
 export default async function page() {
 	const session = await auth();
@@ -7,6 +8,10 @@ export default async function page() {
 	if (!session?.user?.email) {
 		await signIn();
 		return <div>Please log in.</div>;
+	}
+
+	if (!animals) {
+		<div>System hasn't finished loading.</div>;
 	}
 
 	const email = session.user?.email;
@@ -25,10 +30,16 @@ export default async function page() {
 		);
 	}
 
+	const animalImagesPromises = userAnimals.map((animal) => getImage(animal));
+	const animalImages = await Promise.all(animalImagesPromises);
+
 	return (
 		<div>
 			{userAnimals.map((animal, i) => (
-				<div key={i}>{JSON.stringify(animal)}</div>
+				<div key={i}>
+					<Image src={animalImages[i]} alt="" width={512} height={512} />
+					{JSON.stringify(animal)}
+				</div>
 			))}
 		</div>
 	);

@@ -1,7 +1,6 @@
 import { sha1 } from "object-hash";
-import { parse, stringify } from "yaml";
-import * as fs from "node:fs/promises";
 import { Animal, setAnimals } from "./animal";
+import * as FS from "./fs";
 
 export type Block = {
 	timestamp: number;
@@ -23,7 +22,6 @@ function hash(block: Block) {
 	return sha1(block);
 }
 
-const bcFile = "blockchain.yaml";
 const genBlock = newBlock("system", { info: "Initializing blockchain" });
 
 export const blockchain = await initBlockchain();
@@ -32,8 +30,7 @@ async function initBlockchain() {
 	try {
 		// load from file
 		console.log("Loading blockchain...");
-		const str = await fs.readFile(bcFile, { encoding: "utf8" });
-		const bc = parse(str) as Block[];
+		const bc = (await FS.loadBcFromFile()) as Block[];
 
 		const err = checkBlockchain(bc);
 		if (err) {
@@ -60,11 +57,9 @@ async function initBlockchain() {
 		// create new blockchain
 		console.warn(`Blockchain file error. ${error}`);
 		console.log("Starting new blockchain...");
-		const bc = [genBlock];
 
-		// save to file
-		const yaml = stringify(bc);
-		await fs.writeFile(bcFile, yaml);
+		const bc = [genBlock];
+		FS.newBcFile(bc);
 
 		return bc;
 	}
@@ -72,11 +67,9 @@ async function initBlockchain() {
 
 export function createBlock(type: string, data: any) {
 	const block = newBlock(type, data, hash(blockchain[blockchain.length - 1]));
-	blockchain.push(block);
 
-	// save to file
-	const yaml = stringify([block]);
-	fs.writeFile(bcFile, yaml, { flag: "a+" });
+	blockchain.push(block);
+	FS.appendToBcFile(block);
 }
 
 export function checkBlockchain(blockchain: Block[]) {
