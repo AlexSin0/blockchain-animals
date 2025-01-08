@@ -1,6 +1,7 @@
 import { sha1 } from "object-hash";
 import { Animal, setAnimals } from "./animal";
 import * as FS from "./fs";
+import { addMoneyUnrecorded, GiveMoneyType } from "./user";
 
 export type Block = {
 	timestamp: number;
@@ -19,7 +20,7 @@ function newBlock(type: string, data: any, previousHash = "") {
 }
 
 function hash(block: Block) {
-	return sha1(block);
+	return sha1(FS.sanitize(block));
 }
 
 const genBlock = newBlock("system", { info: "Initializing blockchain" });
@@ -43,8 +44,20 @@ async function initBlockchain() {
 		bc.forEach((b) => {
 			switch (b.type) {
 				case "animal": {
-					const animal = b.data.animal as Animal;
+					const animal = b.data as Animal;
 					loadedAnimals.push(animal);
+					break;
+				}
+				case "money": {
+					const { user, amount, info }: GiveMoneyType = b.data;
+					addMoneyUnrecorded(user, amount);
+					break;
+				}
+				case "sell": {
+					const { price, animal }: { price: number; animal: Animal } = b.data;
+					const index = loadedAnimals.findIndex((v) => v.id === animal.id);
+					loadedAnimals.splice(index, 1);
+					addMoneyUnrecorded(animal.owner, price);
 					break;
 				}
 			}

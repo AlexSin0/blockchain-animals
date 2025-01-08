@@ -1,6 +1,10 @@
 import * as fs from "node:fs/promises";
 import { parse, stringify } from "yaml";
 
+export function sanitize(obj: any) {
+	return parse(stringify(obj));
+}
+
 export const fileExists = (path: string) =>
 	fs.stat(path).then(
 		() => true,
